@@ -435,9 +435,7 @@ module Printer (BP:BPrinter) = struct
        `Instr ("ret", [])
 
     | SysCall(op) ->
-      let name = "call" in
-      let args = [pp_syscall op] in
-      `Instr(name, args)
+        `Instr ("syscall", [])
 
     | AsmOp(op, args) ->
       let id = instr_desc X86_decl.x86_decl X86_instr_decl.x86_op_decl (None, op) in

@@ -14,14 +14,17 @@ Record ovm_syscall_sig_t :=
 
 Class one_varmap_info := { 
   syscall_sig  : syscall_t -> ovm_syscall_sig_t;
+  syscall_args : seq var;
+  syscall_ret  : seq var;
   all_vars     : Sv.t;
   callee_saved : Sv.t;
+  kernel_callee_saved : Sv.t;
   vflags       : Sv.t;
   vflagsP      : forall x, Sv.In x vflags -> vtype x = sbool
 }.
 
 Definition syscall_kill {ovm_i : one_varmap_info} :=
-  Sv.diff all_vars callee_saved.
+  Sv.diff all_vars kernel_callee_saved.
 
 Section Section.
 
