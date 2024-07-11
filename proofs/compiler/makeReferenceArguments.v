@@ -18,6 +18,7 @@ Module Import E.
 End E.
 
 Section Section.
+Context {pd: PointerData}.
 Context `{asmop:asmOp}.
 Context (fresh_reg_ptr : instr_info -> Ident.name -> stype -> Ident.ident).
 Context (p : uprog).

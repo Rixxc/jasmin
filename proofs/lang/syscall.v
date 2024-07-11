@@ -35,15 +35,20 @@ Record syscall_sig_t := {
   scs_tout : seq stype
 }.
 
-Definition syscall_sig_u (o : syscall_t) : syscall_sig_t := 
+Definition syscall_num (o: syscall_t) : Z :=
   match o with
-  | RandomBytes len => {| scs_tin := [:: sarr len]; scs_tout := [:: sarr len] |}
+  | RandomBytes _ => 318
+  end.
+
+Definition syscall_sig_u {pd: PointerData} (o : syscall_t) : syscall_sig_t := 
+  match o with
+  | RandomBytes len => {| scs_tin := [:: sarr len; sword Uptr]; scs_tout := [:: sarr len; sword Uptr] |}
   end.
 
 (* After stack alloc ie sprog *)
 Definition syscall_sig_s {pd:PointerData} (o:syscall_t) : syscall_sig_t := 
   match o with
-  | RandomBytes _ => {| scs_tin := [::sword Uptr; sword Uptr]; scs_tout := [::sword Uptr] |}
+  | RandomBytes _ => {| scs_tin := [:: sword Uptr; sword Uptr; sword Uptr; sword Uptr]; scs_tout := [::sword Uptr] |}
   end.
 
 

@@ -74,7 +74,7 @@ and iac_instr_r pd loc ir =
       (* Fix the size it is dummy for the moment *)
       let ty =
         match xs with
-        | [x] -> Typing.ty_lval pd loc x
+        | [x; _] -> Typing.ty_lval pd loc x
         | _ -> assert false in
       let p = Conv.pos_of_int (Prog.size_of ty) in
       Csyscall(xs, Syscall_t.RandomBytes p, es)

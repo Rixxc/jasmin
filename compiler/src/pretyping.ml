@@ -1616,21 +1616,36 @@ let rec tt_instr arch_info (env : 'asm Env.env) ((annot,pi) : S.pinstr) : 'asm E
       (* FIXME syscall *)
       (* This is dirty but ... *)
       if ls <> None then rs_tyerror ~loc:(L.loc pi) (string_error "randombytes expects no implicit arguments");
-      let loc, x, ty =
+      let lvs, ty =
         match xs with
-        | [x] ->
+        | [x; y] ->
           let loc, x, oty = tt_lvalue arch_info.pd env x in
           let ty =
             match oty with
             | None -> rs_tyerror ~loc (string_error "_ lvalue not accepted here")
             | Some ty -> ty in
-          loc, x ty, ty
+          let _ = tt_as_array (loc, ty) in
+          let yloc, y, yoty = tt_lvalue arch_info.pd env y in
+          let yty =
+            match yoty with
+            | None -> rs_tyerror ~loc (string_error "_ lvalue not accepted here")
+            | Some ty -> ty in
+          let _ = tt_as_word (yloc, yty) in
+          [x ty; y ty], ty
         | _ ->
           rs_tyerror ~loc:(L.loc pi)
-            (string_error "only a single variable is allowed as destination of randombytes") in
-      let _ = tt_as_array (loc, ty) in
-      let es = tt_exprs_cast arch_info.pd env (L.loc pi) args [ty] in
-      env, [mk_i (P.Csyscall([x], Syscall_t.RandomBytes (Conv.pos_of_int 1), es))]
+            (string_error "only two variables are allowed as destination of randombytes") in
+      (* let es = tt_exprs_cast arch_info.pd env (L.loc pi) args [ty] in *)
+      let es = 
+        match args with
+        | [e; f] -> 
+            let e = tt_expr_cast arch_info.pd env e ty in
+            let e2, ty2 = tt_expr arch_info.pd env f in
+            let _ = tt_as_word (L._dummy, ty2) in
+            [e; e2]
+        | _ -> rs_tyerror ~loc:(L.loc pi) (string_error "randombytes expects two variables as input")
+      in
+      env, [mk_i (P.Csyscall(lvs, Syscall_t.RandomBytes (Conv.pos_of_int 1), es))]
 
   | S.PIAssign (ls, `Raw, { pl_desc = PEPrim (f, args) }, None) ->
       let p = tt_prim arch_info.asmOp f in
