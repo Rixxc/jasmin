@@ -162,6 +162,7 @@ let pp_mnemonic_ext (ARM_op (mn, opts) as op) suff args =
 let pp_syscall (o : _ Syscall_t.syscall_t) =
   match o with
   | Syscall_t.RandomBytes _ -> "__jasmin_syscall_randombytes__"
+  | Syscall_t.Futex -> "__jasmin_syscall_futex__"
 
 (* To conform to the Unified Assembly Language (UAL) of ARM, IT instructions
    must be introduced *in addition* to conditional suffixes. *)

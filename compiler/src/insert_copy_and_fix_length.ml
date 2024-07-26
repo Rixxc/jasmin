@@ -78,6 +78,8 @@ and iac_instr_r pd loc ir =
         | _ -> assert false in
       let p = Conv.pos_of_int (Prog.size_of ty) in
       Csyscall(xs, Syscall_t.RandomBytes p, es)
+    | _ ->
+        Csyscall (xs, o, es)
     end
 
   | Ccall _ -> ir

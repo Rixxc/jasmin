@@ -1183,6 +1183,16 @@ Definition alloc_syscall ii rmap rs o es :=
     | _, _ =>
       Error (stk_ierror_no_var "randombytes: invalid args or result")
     end
+  | Futex =>
+    match es with
+    | [::Pvar uaddr; Pvar futex_op; Pvar val; Pvar timeout; Pvar uaddr2; Pvar val3] =>
+      let gv := uaddr.(gv) in
+      let xsys_num := with_var gv (vxsys_num pmap) in
+      ok (rmap, [::MkI ii (sap_immediate saparams xsys_num (syscall_num o));
+                   MkI ii (Csyscall rs o [::Plvar xsys_num; Pvar uaddr; Pvar futex_op; Pvar val; Pvar timeout; Pvar uaddr2; Pvar val3])])
+    | _ =>
+      Error (stk_ierror_no_var "futex: invalid args or result")
+    end
   end.
 
 Fixpoint alloc_i sao (rmap:region_map) (i: instr) : cexec (region_map * cmd) :=

@@ -1647,6 +1647,41 @@ let rec tt_instr arch_info (env : 'asm Env.env) ((annot,pi) : S.pinstr) : 'asm E
       in
       env, [mk_i (P.Csyscall(lvs, Syscall_t.RandomBytes (Conv.pos_of_int 1), es))]
 
+  | S.PIAssign ((ls, xs), `Raw, { pl_desc = PEPrim (f, args) }, None) when L.unloc f = "futex" ->
+      if ls <> None then rs_tyerror ~loc:(L.loc pi) (string_error "futex expects no implicit arguments");
+      let loc, x, ty =
+        match xs with
+          | [x] ->
+            let loc, x, oty = tt_lvalue arch_info.pd env x in
+            let ty =
+              match oty with
+              | None -> rs_tyerror ~loc (string_error "_ lvalue not accepted here")
+              | Some ty -> ty in
+            loc, x ty, ty
+          | _ ->
+            rs_tyerror ~loc:(L.loc pi)
+              (string_error "only one variables is allowed as destination of futex") in
+      let es = 
+        match args with
+        | [uaddr; op; fval; timeout; uaddr2; val3] -> 
+            let uaddr, ty = tt_expr arch_info.pd env uaddr in
+            let _ = tt_as_word (L._dummy, ty) in
+            let op, ty = tt_expr arch_info.pd env op in
+            let _ = tt_as_word (L._dummy, ty) in
+            let fval, ty = tt_expr arch_info.pd env fval in
+            let _ = tt_as_word (L._dummy, ty) in
+            let timeout, ty = tt_expr arch_info.pd env timeout in
+            let _ = tt_as_word (L._dummy, ty) in
+            let uaddr2, ty = tt_expr arch_info.pd env uaddr2 in
+            let _ = tt_as_word (L._dummy, ty) in
+            let val3, ty = tt_expr arch_info.pd env val3 in
+            let _ = tt_as_word (L._dummy, ty) in
+            [uaddr; op; fval; timeout; uaddr2; val3]
+        | _ -> rs_tyerror ~loc:(L.loc pi) (string_error "randombytes expects two variables as input")
+      in
+      env, [mk_i (P.Csyscall([x], Syscall_t.Futex, es))]
+
+
   | S.PIAssign (ls, `Raw, { pl_desc = PEPrim (f, args) }, None) ->
       let p = tt_prim arch_info.asmOp f in
       let tlvs, tes, arguments = prim_sig arch_info.asmOp p in

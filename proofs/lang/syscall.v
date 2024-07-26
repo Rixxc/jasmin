@@ -59,8 +59,8 @@ Definition syscall_sig_s {pd:PointerData} (o:syscall_t) : syscall_sig_t :=
 (* -------------------------------------------------------------------- *)
 (* For the semantic                                                     *)
 Class syscall_sem {pd : PointerData} (syscall_state : Type) := {
-  get_random : syscall_state -> Z -> syscall_state * seq u8;
-  futex : syscall_state -> word Uptr -> word Uptr -> word U32 -> word Uptr -> word Uptr -> word U32 -> syscall_state * word U64;
+  get_random : syscall_state -> Z -> word Uptr -> syscall_state * (seq u8 * word Uptr);
+  futex : syscall_state -> word Uptr -> word Uptr -> word U32 -> word Uptr -> word Uptr -> word U32 -> syscall_state * word Uptr;
 }.
 
 
