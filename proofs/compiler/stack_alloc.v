@@ -1193,6 +1193,16 @@ Definition alloc_syscall ii rmap rs o es :=
     | _ =>
       Error (stk_ierror_no_var "futex: invalid args or result")
     end
+  | Mmap =>
+    match es with
+    | [::Pvar addr; Pvar len; Pvar prot; Pvar flags; Pvar fildes; Pvar off] =>
+      let gv := addr.(gv) in
+      let xsys_num := with_var gv (vxsys_num pmap) in
+      ok (rmap, [::MkI ii (sap_immediate saparams xsys_num (syscall_num o));
+                   MkI ii (Csyscall rs o [::Plvar xsys_num; Pvar addr; Pvar len; Pvar prot; Pvar flags; Pvar fildes; Pvar off])])
+    | _ =>
+      Error (stk_ierror_no_var "mmap: invalid args or result")
+    end
   end.
 
 Fixpoint alloc_i sao (rmap:region_map) (i: instr) : cexec (region_map * cmd) :=

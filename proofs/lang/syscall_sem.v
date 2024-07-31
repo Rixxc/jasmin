@@ -63,6 +63,22 @@ Definition exec_futex_u (scs: syscall_state) (vs: seq value) :=
   let: (st, ret) := futex scs u f v t u2 v3 in
   ok (st, [:: Vword ret]).
 
+Definition exec_mmap_u (scs: syscall_state) (vs: seq value) :=
+  Let: (a, l, p, f, fd, o):=
+    match vs with
+    | [:: addr; len; prot; flags; fildes; off] =>
+        Let a := to_word Uptr addr in
+        Let l := to_word Uptr len in
+        Let p := to_word Uptr prot in
+        Let f := to_word Uptr flags in
+        Let fd := to_word Uptr fildes in
+        Let o := to_word Uptr off in
+        ok (a, l, p, f, fd, o)
+    | _ => type_error
+    end in
+  let: (st, ret) := mmap scs a l p f fd o in
+  ok (st, [:: Vword ret]).
+
 Definition exec_syscall_u
   (scs : syscall_state_t)
   (m : mem)
@@ -75,6 +91,9 @@ Definition exec_syscall_u
       ok (sv.1, m, sv.2)
   | Futex => 
       Let sv := exec_futex_u scs vs in
+      ok (sv.1, m, sv.2)
+  | Mmap =>
+      Let sv := exec_mmap_u scs vs in
       ok (sv.1, m, sv.2)
   end.
 
@@ -98,10 +117,10 @@ Definition mem_equiv m1 m2 := stack_stable m1 m2 /\ validw m1 =2 validw m2.
 Lemma exec_syscallSu scs m o vargs rscs rm vres :
   exec_syscall_u scs m o vargs = ok (rscs, rm, vres) →
   mem_equiv m rm.
-Proof.
-  rewrite /exec_syscall_u; case: o => [ p |  ].
-  by t_xrbindP => -[scs' v'] /= _ _ <- _.
 Admitted.
+(* rewrite /exec_syscall_u; case: o => [ p |  ].
+  by t_xrbindP => -[scs' v'] /= _ _ <- _.
+   Admitted. *)
 
 End SourceSysCall.
 
@@ -121,6 +140,11 @@ Definition exec_futex_s_core (scs:syscall_state_t) (m:mem) (sys_num:pointer) (ua
   let '(st, ret) := syscall.futex scs uaddr op val timeout addr2 val3 in
   ok(st, m, ret).
 
+Definition exec_mmap_s_core (scs:syscall_state_t) (m:mem) (sys_num:pointer) (addr:pointer) (len:pointer) (prot:pointer) (flags:pointer) (fildes:pointer) (off:pointer): (exec (syscall_state * mem * sem_tuple (syscall_sig_s Mmap).(scs_tout))) :=
+  Let _ := assert (Z.eqb (wunsigned sys_num) (syscall_num (Mmap))) ErrType in 
+  let '(st, ret) := syscall.mmap scs addr len prot flags fildes off in
+  ok(st, m, ret).
+
 Lemma exec_getrandom_s_core_stable scs m sys_num p len _fl rscs rm rp :
   exec_getrandom_s_core scs m sys_num p len _fl = ok (rscs, rm, rp) →
   stack_stable m rm.
@@ -136,6 +160,7 @@ Definition sem_syscall (o:syscall_t) :
   match o with
   | RandomBytes _ => exec_getrandom_s_core
   | Futex => exec_futex_s_core
+  | Mmap => exec_mmap_s_core
   end.
 
 Definition exec_syscall_s (scs : syscall_state_t) (m : mem) (o:syscall_t) vs : exec (syscall_state_t * mem * values) :=

@@ -1677,10 +1677,43 @@ let rec tt_instr arch_info (env : 'asm Env.env) ((annot,pi) : S.pinstr) : 'asm E
             let val3, ty = tt_expr arch_info.pd env val3 in
             let _ = tt_as_word (L._dummy, ty) in
             [uaddr; op; fval; timeout; uaddr2; val3]
-        | _ -> rs_tyerror ~loc:(L.loc pi) (string_error "randombytes expects two variables as input")
+        | _ -> rs_tyerror ~loc:(L.loc pi) (string_error "futex expects two variables as input")
       in
       env, [mk_i (P.Csyscall([x], Syscall_t.Futex, es))]
 
+  | S.PIAssign ((ls, xs), `Raw, { pl_desc = PEPrim (f, args) }, None) when L.unloc f = "mmap" ->
+      if ls <> None then rs_tyerror ~loc:(L.loc pi) (string_error "mmap expects no implicit arguments");
+      let loc, x, ty =
+        match xs with
+          | [x] ->
+            let loc, x, oty = tt_lvalue arch_info.pd env x in
+            let ty =
+              match oty with
+              | None -> rs_tyerror ~loc (string_error "_ lvalue not accepted here")
+              | Some ty -> ty in
+            loc, x ty, ty
+          | _ ->
+            rs_tyerror ~loc:(L.loc pi)
+              (string_error "only one variables is allowed as destination of mmap") in
+      let es = 
+        match args with
+        | [addr; len; prot; flags; filedes; off] -> 
+            let addr, ty = tt_expr arch_info.pd env addr in
+            let _ = tt_as_word (L._dummy, ty) in
+            let len, ty = tt_expr arch_info.pd env len in
+            let _ = tt_as_word (L._dummy, ty) in
+            let prot, ty = tt_expr arch_info.pd env prot in
+            let _ = tt_as_word (L._dummy, ty) in
+            let flags, ty = tt_expr arch_info.pd env flags in
+            let _ = tt_as_word (L._dummy, ty) in
+            let filedes, ty = tt_expr arch_info.pd env filedes in
+            let _ = tt_as_word (L._dummy, ty) in
+            let off, ty = tt_expr arch_info.pd env off in
+            let _ = tt_as_word (L._dummy, ty) in
+            [addr; len; prot; flags; filedes; off]
+        | _ -> rs_tyerror ~loc:(L.loc pi) (string_error "mmap expects two variables as input")
+      in
+      env, [mk_i (P.Csyscall([x], Syscall_t.Mmap, es))]
 
   | S.PIAssign (ls, `Raw, { pl_desc = PEPrim (f, args) }, None) ->
       let p = tt_prim arch_info.asmOp f in
