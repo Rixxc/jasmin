@@ -918,7 +918,7 @@ module Normal = struct
     | Csyscall(lvs, o, _) ->
       if lvs = [] then env
       else
-        let tys = List.map Conv.ty_of_cty (Syscall.syscall_sig_u o).scs_tout in
+        let tys = List.map Conv.ty_of_cty (Syscall.syscall_sig_u pd o).scs_tout in
         let ltys = List.map ty_lval lvs in
         if (check_lvals lvs && ltys = tys) then env
         else add_aux env tys
@@ -988,7 +988,7 @@ module Normal = struct
         pp_call pd env fmt lvs otys otys pp es
 
     | Csyscall(lvs, o, es) ->
-      let s = Syscall.syscall_sig_u o in
+      let s = Syscall.syscall_sig_u pd o in
       let otys = List.map Conv.ty_of_cty s.scs_tout in
       let itys =  List.map Conv.ty_of_cty s.scs_tin in
       let pp_args fmt es =
@@ -1206,7 +1206,7 @@ module Leak = struct
        let env = add_aux env tys in
        add_aux env (List.map ty_lval lvs)
     | Csyscall(lvs, o, _)->
-      let s = Syscall.syscall_sig_u o in
+      let s = Syscall.syscall_sig_u pd o in
       let otys = List.map Conv.ty_of_cty s.scs_tout in
       let env = add_aux env otys in
       add_aux env (List.map ty_lval lvs)
@@ -1300,7 +1300,7 @@ module Leak = struct
         pp_call pd env fmt lvs otys otys pp es
 
     | Csyscall(lvs, o, es) ->
-      let s = Syscall.syscall_sig_u o in
+      let s = Syscall.syscall_sig_u pd o in
       let otys = List.map Conv.ty_of_cty s.scs_tout in
       let itys =  List.map Conv.ty_of_cty s.scs_tin in
 

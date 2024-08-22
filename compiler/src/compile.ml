@@ -419,6 +419,6 @@ let compile (type reg regx xreg rflag cond asm_op extra_op)
       (snd prog) []
   in
 
-  Compiler.compile_prog_to_asm Arch.asm_e Arch.call_conv Arch.aparams cparams
+  Compiler.compile_prog_to_asm Arch.asm_e Arch.kernel_call_conv Arch.call_conv Arch.aparams cparams
     export_functions
     (Expr.to_uprog Arch.asmOp cprog)

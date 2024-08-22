@@ -70,7 +70,7 @@ Section WRITE1.
     match i with
     | Cassgn x _ _ _  => vrv_rec s x
     | Copn xs _ _ _   => vrvs_rec s xs
-    | Csyscall xs o _ => vrvs_rec (Sv.union s syscall_kill) (to_lvals (syscall_sig o).(scs_vout))
+    | Csyscall xs o _  => vrvs_rec (Sv.union s syscall_kill) (to_lvals (take (size xs) syscall_ret))
     | Cif   _ c1 c2   => foldl write_I_rec (foldl write_I_rec s c2) c1
     | Cfor  x _ c     => foldl write_I_rec (Sv.add x s) c
     | Cwhile _ c _ c' => foldl write_I_rec (foldl write_I_rec s c') c
@@ -165,9 +165,8 @@ Section CHECK.
       Let _ := check_es ii D es in
       check_lvs ii D xs
     | Csyscall xs o es =>
-      let osig := syscall_sig o in
-      let o_params := osig.(scs_vin) in
-      let o_res := osig.(scs_vout) in
+      let o_params := take (size es) syscall_args in
+      let o_res := take (size xs) syscall_ret in
       Let _ := check_es ii D es in
       Let _ := assert
         (all2 (λ e a, if e is Pvar (Gvar v Slocal) then v_var v == a else false) es o_params)
@@ -176,7 +175,7 @@ Section CHECK.
         (all2 (λ x r, if x is Lvar v then v_var v == r else false) xs o_res)
         (E.internal_error ii "bad syscall dests") in
       let W := syscall_kill in
-      ok (Sv.diff (Sv.union D W) (vrvs (to_lvals (syscall_sig o).(scs_vout))))
+      ok (Sv.diff (Sv.union D W) (vrvs (to_lvals o_res)))
     | Cif b c1 c2 =>
       Let _ := check_e ii D b in
       Let D1 := check_c (check_i sz) D c1 in

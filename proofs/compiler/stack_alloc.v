@@ -167,6 +167,7 @@ Record pos_map := {
   vrip    : var;
   vrsp    : var;
   vxlen   : var;
+  vxsys_num : var;
   globals : Mvar.t (Z * wsize);
   locals  : Mvar.t ptr_kind;
   vnew    : Sv.t;
@@ -1159,7 +1160,7 @@ Definition alloc_call (sao_caller:stk_alloc_oracle_t) rmap rs fn es :=
      xlen := len;
      Csyscall [::xp] (getrandom len) [::p, xlen]
 *)
-Definition alloc_syscall ii rmap rs o es :=
+Definition alloc_syscall ii rmap rs o es := 
   add_iinfo ii
   match o with
   | RandomBytes len =>
@@ -1168,18 +1169,47 @@ Definition alloc_syscall ii rmap rs o es :=
                     (stk_error_no_var "randombytes: the requested size is too large")
     in
     match rs, es with
-    | [::Lvar x], [::Pvar xe] =>
+    | [::Lvar x; Lvar s], [::Pvar xe; Pvar xflag] =>
       let xe := xe.(gv) in
       let xlen := with_var xe (vxlen pmap) in
+      let xsys_num := with_var xe (vxsys_num pmap) in
       Let p  := get_regptr xe in
       Let xp := get_regptr x in
       Let sr := get_sub_region rmap xe in
       Let rmap := set_sub_region rmap x sr (Some 0%Z) (Zpos len) in
+      Let i_xp := match sap_mov_ofs saparams (Lvar xp) AT_none (VKptr (Pregptr xp)) (Plvar p) 0 with
+                  | None =>
+                      let err_pp := pp_box [:: pp_s "cannot compute address"; pp_var x] in
+                      Error (stk_error x err_pp)
+                  | Some ixp => ok (ixp)
+                  end in
       ok (rmap,
           [:: MkI ii (sap_immediate saparams xlen (Zpos len));
-              MkI ii (Csyscall [::Lvar xp] o [:: Plvar p; Plvar xlen])])
+              MkI ii (sap_immediate saparams xsys_num (syscall_num o));
+              MkI ii (Csyscall [::Lvar s] o [:: Plvar xsys_num; Plvar p; Plvar xlen; Pvar xflag]);
+              MkI ii i_xp])
     | _, _ =>
       Error (stk_ierror_no_var "randombytes: invalid args or result")
+    end
+  | Futex =>
+    match es with
+    | [::Pvar uaddr; Pvar futex_op; Pvar val; Pvar timeout; Pvar uaddr2; Pvar val3] =>
+      let gv := uaddr.(gv) in
+      let xsys_num := with_var gv (vxsys_num pmap) in
+      ok (rmap, [::MkI ii (sap_immediate saparams xsys_num (syscall_num o));
+                   MkI ii (Csyscall rs o [::Plvar xsys_num; Pvar uaddr; Pvar futex_op; Pvar val; Pvar timeout; Pvar uaddr2; Pvar val3])])
+    | _ =>
+      Error (stk_ierror_no_var "futex: invalid args or result")
+    end
+  | Mmap =>
+    match es with
+    | [::Pvar addr; Pvar len; Pvar prot; Pvar flags; Pvar fildes; Pvar off] =>
+      let gv := addr.(gv) in
+      let xsys_num := with_var gv (vxsys_num pmap) in
+      ok (rmap, [::MkI ii (sap_immediate saparams xsys_num (syscall_num o));
+                   MkI ii (Csyscall rs o [::Plvar xsys_num; Pvar addr; Pvar len; Pvar prot; Pvar flags; Pvar fildes; Pvar off])])
+    | _ =>
+      Error (stk_ierror_no_var "mmap: invalid args or result")
     end
   end.
 
@@ -1446,6 +1476,7 @@ Definition alloc_fd_aux p_extra mglob (fresh_reg : string -> stype -> Ident.iden
   let vrip := {| vtype := sword Uptr; vname := p_extra.(sp_rip) |} in
   let vrsp := {| vtype := sword Uptr; vname := p_extra.(sp_rsp) |} in
   let vxlen := {| vtype := sword Uptr; vname := fresh_reg "__len__"%string (sword Uptr) |} in
+  let vxsys_num := {| vtype := sword Uptr; vname := fresh_reg "__sys_num__"%string (sword Uptr) |} in
   let ra := sao.(sao_return_address) in
   Let stack := init_stack_layout mglob sao in
   Let mstk := init_local_map vrip vrsp vxlen mglob stack sao in
@@ -1460,6 +1491,7 @@ Definition alloc_fd_aux p_extra mglob (fresh_reg : string -> stype -> Ident.iden
         vrip    := vrip;
         vrsp    := vrsp;
         vxlen   := vxlen;
+        vxsys_num := vxsys_num;
         globals := mglob;
         locals  := lmap;
         vnew    := sv;

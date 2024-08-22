@@ -660,16 +660,18 @@ let allocate_forced_registers return_addresses translate_var nv (vars: int Hv.t)
   in
   let alloc_args loc get = alloc_from_list loc ~ctxt:"parameters" Arch.argument_vars Arch.xmm_argument_vars get in
   let alloc_ret loc get = alloc_from_list loc ~ctxt:"return values" Arch.ret_vars Arch.xmm_ret_vars get in
+  let syscall_alloc_args loc get = alloc_from_list loc ~ctxt:"parameters" Arch.kernel_argument_vars Arch.kernel_xmm_argument_vars get in
+  let syscall_alloc_ret loc get = alloc_from_list loc ~ctxt:"return values" Arch.kernel_ret_vars Arch.kernel_xmm_ret_vars get in
   let rec alloc_instr_r loc =
     function
     | Cfor (_, _, s)
       -> alloc_stmt s
     | Copn (lvs, _, op, es) -> forced_registers translate_var loc nv vars cnf lvs op es a
     | Csyscall(lvs, _, es) ->
-       let get_a = function Pvar { gv ; gs = Slocal } -> L.unloc gv | _ -> assert false in
-       let get_r = function Lvar gv -> L.unloc gv | _ -> assert false in
-       alloc_args loc get_a es;
-       alloc_ret loc get_r lvs
+      let get_a = function Pvar { gv ; gs = Slocal } -> L.unloc gv | _ -> assert false in
+      let get_r = function Lvar gv -> L.unloc gv | _ -> assert false in
+      syscall_alloc_args loc get_a es;
+      syscall_alloc_ret loc get_r lvs
 
     | Cwhile (_, s1, _, s2)
     | Cif (_, s1, s2)
