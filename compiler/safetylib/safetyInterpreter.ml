@@ -1647,9 +1647,9 @@ end = struct
     match sc with
     | Syscall_t.RandomBytes n ->
        let cells = match lvs with
-         | [ Lnone _ ] -> []
-         | [ Lvar x ] -> cells_of_array x 0 n
-         | [ Lasub(aa, ws, _len, x, ofs) ] ->
+         | [ Lnone _; _ ] -> []
+         | [ Lvar x; _ ] -> cells_of_array x 0 n
+         | [ Lasub(aa, ws, _len, x, ofs); _ ] ->
             begin match AbsExpr.aeval_cst_int state.abs ofs with
             | Some j -> cells_of_array x (access_offset aa ws j) n
             | None ->
