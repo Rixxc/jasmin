@@ -1661,6 +1661,11 @@ end = struct
        in
        let abs = List.fold_left AbsDom.is_init state.abs cells in
        { state with abs }
+    | Syscall_t.Futex
+    | Syscall_t.Mmap ->
+       let abs = List.fold_left AbsDom.is_init state.abs [] in
+       { state with abs }
+
 
   let log = timestamp ()
 
