@@ -298,8 +298,8 @@ let rec infer_msf_i ~withcheck fenv (tbl:(L.i_loc, Sv.t) Hashtbl.t) i ms =
 
   match i.i_desc with
   | Csyscall _ ->
-      if not (Sv.is_empty ms) && withcheck then
-        error ~loc "syscalls destroy msf variables, %a are required" pp_vset ms;
+      (* if not (Sv.is_empty ms) && withcheck then *)
+      (*   error ~loc "syscalls destroy msf variables, %a are required" pp_vset ms; *)
       (* withcheck => is_empty ms *)
       ms
 
@@ -1144,10 +1144,24 @@ let rec ty_instr is_ct_asm fenv env ((msf,venv) as msf_e :msf_e) i =
   match i.i_desc with
   | Csyscall (xs, o, es) ->
     (* TODO: generalize to other syscalls *)
-    assert (match o with Syscall_t.RandomBytes _ -> true);
+    (* TODO: is this secure? Here we assume that randombytes does not leak the
+       contents of the array. *)
     List.iter (ensure_public_address_expr env venv loc) es;
+    let tys =
+      (* For randombytes, the second result is the number of bytes returned
+         which we assume it's public. The first result is aliased with the first
+         argument, so we know the address is public. *)
+      let tptr = Indirect(Env.public2 env, Env.secret2 env) in
+      match o with
+      | Syscall_t.RandomBytes _ -> [ tptr; Env.dpublic env ]
+      | Syscall_t.Futex -> [ Env.dpublic env ]
+      | Syscall_t.Mmap -> [ Env.dpublic env ]
+    in
+    let _, venv = ty_lvals env (MSF.toinit, venv) xs tys in
+    (* Syscalls act like fences. *)
+    let venv = Env.set_init_msf env venv None in
     (* We don't known what happen to MSF after external function call *)
-    ty_lvals1 env (MSF.toinit, venv) xs (Env.dsecret env)
+    MSF.toinit, venv
 
   | Cassgn(mso, _, _, (Pvar x as msi)) when MSF.is_msf_exact msf x.gv ->
     let mso = reg_lval ~direct:true loc mso and msi = reg_expr ~direct:true loc msi in
