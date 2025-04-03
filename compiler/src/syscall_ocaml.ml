@@ -24,6 +24,9 @@ let futex (s : state) _uaddr _futex_op _val _timeout _uaddr2 _val3 =
 let mmap (s : state) _addr _len _prot _flags _filedes _off =
     s, Word0.wrepr Wsize.U64 (CoreConv.cz_of_int 0)
 
+let munmap (s : state) _addr _len =
+    s, Word0.wrepr Wsize.U64 (CoreConv.cz_of_int 0)
+
 let mremap (s : state) _addr _oldlen _newlen _flags _newaddr =
     s, Word0.wrepr Wsize.U64 (CoreConv.cz_of_int 0)
 
@@ -31,5 +34,6 @@ let sc_sem : state Syscall.syscall_sem = {
   get_random = get_random;
   futex =  futex;
   mmap = mmap;
+  munmap = munmap;
   mremap = mremap;
 }

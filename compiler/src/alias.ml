@@ -180,6 +180,7 @@ let syscall_cc (o : 'a Syscall_t.syscall_t) =
   | Syscall_t.RandomBytes _ -> [Some 0; None]
   | Syscall_t.Futex -> [None]
   | Syscall_t.Mmap -> [None]
+  | Syscall_t.Munmap -> [None]
   | Syscall_t.Mremap -> [None]
 
 

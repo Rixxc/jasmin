@@ -1839,7 +1839,33 @@ let rec tt_instr arch_info (env : 'asm Env.env) ((annot,pi) : S.pinstr) : 'asm E
         | _ -> rs_tyerror ~loc:(L.loc pi) (string_error "mmap expects two variables as input")
       in
       env, [mk_i (P.Csyscall([x], Syscall_t.Mmap, es))]
-  
+
+  | S.PIAssign ((ls, xs), `Raw, { pl_desc = PEPrim (f, args) }, None) when L.unloc f = "munmap" ->
+      if ls <> None then rs_tyerror ~loc:(L.loc pi) (string_error "munmap expects no implicit arguments");
+      let loc, x, ty =
+        match xs with
+          | [x] ->
+            let loc, x, oty = tt_lvalue arch_info.pd env x in
+            let ty =
+              match oty with
+              | None -> rs_tyerror ~loc (string_error "_ lvalue not accepted here")
+              | Some ty -> ty in
+            loc, x ty, ty
+          | _ ->
+            rs_tyerror ~loc:(L.loc pi)
+              (string_error "only one variables is allowed as destination of munmap") in
+      let es = 
+        match args with
+        | [addr; len] -> 
+            let addr, ty = tt_expr arch_info.pd env addr in
+            let _ = tt_as_word (L._dummy, ty) in
+            let len, ty = tt_expr arch_info.pd env len in
+            let _ = tt_as_word (L._dummy, ty) in
+            [addr; len]
+        | _ -> rs_tyerror ~loc:(L.loc pi) (string_error "munmap expects two variables as input")
+      in
+      env, [mk_i (P.Csyscall([x], Syscall_t.Munmap, es))]
+
   | S.PIAssign ((ls, xs), `Raw, { pl_desc = PEPrim (f, args) }, None) when L.unloc f = "mremap" ->
       if ls <> None then rs_tyerror ~loc:(L.loc pi) (string_error "mremap expects no implicit arguments");
       let loc, x, ty =
