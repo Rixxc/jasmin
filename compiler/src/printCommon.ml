@@ -95,6 +95,7 @@ let pp_syscall (o : 'a Syscall_t.syscall_t) =
   | Syscall_t.RandomBytes _ -> "#randombytes"
   | Syscall_t.Futex -> "#futex"
   | Syscall_t.Mmap -> "#mmap"
+  | Syscall_t.Mremap -> "#mremap"
 
 (* -------------------------------------------------------------------- *)
 let pp_bool fmt b = if b then fprintf fmt "true" else fprintf fmt "false"

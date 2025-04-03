@@ -8,7 +8,7 @@ From Coq Require ExtrOCamlInt63.
 
 (* This is a hack to force the extraction to keep the singleton here,
    This need should be removed if we add more constructor to syscall_t *)
-Extract Inductive syscall.syscall_t => "BinNums.positive Syscall_t.syscall_t" ["Syscall_t.RandomBytes" "Syscall_t.Futex" "Syscall_t.Mmap"].
+Extract Inductive syscall.syscall_t => "BinNums.positive Syscall_t.syscall_t" ["Syscall_t.RandomBytes" "Syscall_t.Futex" "Syscall_t.Mmap" "Syscall_t.Mremap"].
 
 Extraction Inline ssrbool.is_left.
 Extraction Inline ssrbool.predT ssrbool.pred_of_argType.

@@ -1171,6 +1171,7 @@ let rec ty_instr is_ct_asm fenv env ((msf,venv) as msf_e :msf_e) i =
       | Syscall_t.RandomBytes _ -> [ tptr; Env.dpublic env ]
       | Syscall_t.Futex -> [ Env.dpublic env ]
       | Syscall_t.Mmap -> [ Env.dpublic env ]
+      | Syscall_t.Mremap -> [ Env.dpublic env ]
     in
     let _, venv = ty_lvals env (MSF.toinit, venv) xs tys in
     (* Syscalls act like fences. *)

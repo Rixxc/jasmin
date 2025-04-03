@@ -1211,6 +1211,16 @@ Definition alloc_syscall ii rmap rs o es :=
     | _ =>
       Error (stk_ierror_no_var "mmap: invalid args or result")
     end
+  | Mremap =>
+    match es with
+    | [::Pvar addr; Pvar oldlen; Pvar newlen; Pvar flags; Pvar newaddr] =>
+      let gv := addr.(gv) in
+      let xsys_num := with_var gv (vxsys_num pmap) in
+      ok (rmap, [::MkI ii (sap_immediate saparams xsys_num (syscall_num o));
+                   MkI ii (Csyscall rs o [::Plvar xsys_num; Pvar addr; Pvar oldlen; Pvar newlen; Pvar flags; Pvar newaddr])])
+    | _ =>
+      Error (stk_ierror_no_var "mremap: invalid args or result")
+    end
   end.
 
 Definition is_swap_array o :=

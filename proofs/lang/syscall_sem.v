@@ -79,6 +79,21 @@ Definition exec_mmap_u (scs: syscall_state) (vs: seq value) :=
   let: (st, ret) := mmap scs a l p f fd o in
   ok (st, [:: Vword ret]).
 
+Definition exec_mremap_u (scs: syscall_state) (vs: seq value) :=
+  Let: (a, ol, nl, f, na):=
+    match vs with
+    | [:: addr; oldlen; newlen; flags; newaddr] =>
+        Let a := to_word Uptr addr in
+        Let ol := to_word Uptr oldlen in
+        Let nl := to_word Uptr newlen in
+        Let f := to_word Uptr flags in
+        Let na := to_word Uptr newaddr in
+        ok (a, ol, nl, f, na)
+    | _ => type_error
+    end in
+  let: (st, ret) := mremap scs a ol nl f na in
+  ok (st, [:: Vword ret]).
+
 Definition exec_syscall_u
   (scs : syscall_state_t)
   (m : mem)
@@ -94,6 +109,9 @@ Definition exec_syscall_u
       ok (sv.1, m, sv.2)
   | Mmap =>
       Let sv := exec_mmap_u scs vs in
+      ok (sv.1, m, sv.2)
+  | Mremap =>
+      Let sv := exec_mremap_u scs vs in
       ok (sv.1, m, sv.2)
   end.
 
@@ -145,6 +163,11 @@ Definition exec_mmap_s_core (scs:syscall_state_t) (m:mem) (sys_num:pointer) (add
   let '(st, ret) := syscall.mmap scs addr len prot flags fildes off in
   ok(st, m, ret).
 
+Definition exec_mremap_s_core (scs:syscall_state_t) (m:mem) (sys_num:pointer) (addr:pointer) (oldlen:pointer) (newlen:pointer) (flags:pointer) (newaddr:pointer): (exec (syscall_state * mem * sem_tuple (syscall_sig_s Mremap).(scs_tout))) :=
+  Let _ := assert (Z.eqb (wunsigned sys_num) (syscall_num (Mremap))) ErrType in 
+  let '(st, ret) := syscall.mremap scs addr oldlen newlen flags newaddr in
+  ok(st, m, ret).
+
 Lemma exec_getrandom_s_core_stable scs m sys_num p len _fl rscs rm rp :
   exec_getrandom_s_core scs m sys_num p len _fl = ok (rscs, rm, rp) →
   stack_stable m rm.
@@ -162,6 +185,7 @@ Definition sem_syscall (o:syscall_t) :
   | RandomBytes _ => exec_getrandom_s_core
   | Futex => exec_futex_s_core
   | Mmap => exec_mmap_s_core
+  | Mremap => exec_mremap_s_core
   end.
 
 Definition exec_syscall_s (scs : syscall_state_t) (m : mem) (o:syscall_t) vs : exec (syscall_state_t * mem * values) :=
