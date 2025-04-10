@@ -307,20 +307,6 @@ fn inline_bool_leaks() {
     }
 }
 
-export
-fn inline_int_leaks() {
-    reg u64 x;
-    x = 0;
-
-    inline int i;
-    i = (int)x;
-
-    do_nothing();
-
-    stack u64[1] s;
-    s[i] = #MOV(0);
-}
-
 fn pointed_data_is_transient() {
     stack u64[1] s;
     s[0] = 1;

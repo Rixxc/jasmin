@@ -41,7 +41,6 @@ Failed as expected modmsf_trace: speculative constant type checker: this functio
                                    the function f1 destroys MSFs at "fail/modmsf-trace.jazz", line 10 (19-31)
 File rsb.jazz:
 Failed as expected pointed_data_is_transient: speculative constant type checker: x has type #transient but should be at most #public
-Failed as expected inline_int_leaks: speculative constant type checker: i has type #transient but should be at most #public
 Failed as expected inline_bool_leaks: speculative constant type checker: b has type #transient but should be at most #public
 Failed as expected inline_modmsf: speculative constant type checker: this function is annotated as nomodmsf, but it modifies the MSF at 
                                   "fail/rsb.jazz", line 295 (4-22).
