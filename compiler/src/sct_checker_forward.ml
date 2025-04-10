@@ -727,15 +727,16 @@ end = struct
        We don't consider MMX registers to be vulnerable because we forbid moving
        non-secret values to MMX.
        This works for the pointer itself but not for the pointed data. *)
-    let is_rsb_vulnerable k =
-      match k with
+    let is_rsb_vulnerable x =
+      match x.v_kind with
       | Wsize.Const | Reg(Extra, _) -> false
-      | Inline | Global | Stack _ | Reg(Normal, _) -> true
+      | Global | Stack _ | Reg(Normal, _) -> true
+      | Inline -> x.v_ty <> Bty Int
     in
 
     let new_le (le_n, _) = (le_n, secret env) in
     let maybe_new_le x le =
-      if not (List.mem x constant_lvars) && is_rsb_vulnerable x.v_kind
+      if not (List.mem x constant_lvars) && is_rsb_vulnerable x
       then new_le le
       else le
     in
@@ -1171,6 +1172,8 @@ let rec ty_instr is_ct_asm fenv env ((msf,venv) as msf_e :msf_e) i =
       | Syscall_t.RandomBytes _ -> [ tptr; Env.dpublic env ]
       | Syscall_t.Futex -> [ Env.dpublic env ]
       | Syscall_t.Mmap -> [ Env.dpublic env ]
+      | Syscall_t.Munmap -> [ Env.dpublic env ]
+      | Syscall_t.Mremap -> [ Env.dpublic env ]
     in
     let _, venv = ty_lvals env (MSF.toinit, venv) xs tys in
     (* Syscalls act like fences. *)

@@ -1662,7 +1662,9 @@ end = struct
        let abs = List.fold_left AbsDom.is_init state.abs cells in
        { state with abs }
     | Syscall_t.Futex
-    | Syscall_t.Mmap ->
+    | Syscall_t.Mmap
+    | Syscall_t.Munmap
+    | Syscall_t.Mremap ->
        let abs = List.fold_left AbsDom.is_init state.abs [] in
        { state with abs }
 

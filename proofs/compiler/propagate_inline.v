@@ -41,11 +41,16 @@ Definition remove_m (pi:pimap) :=
   Mvar.filter_map (fun y c => if c.(pi_m) then None else Some c) pi.
 
 Definition set (pi:pimap) (x:var) (e:pexpr) := 
-  let fv := read_e e in
-  let use := use_mem e in
-  if Sv.mem x fv then pi
-  else 
-    Mvar.set pi x {| pi_def := e; pi_fv_ok := erefl fv; pi_m_ok := erefl use |}.
+  if vtype x is sbool then
+    let fv := read_e e in
+    let use := use_mem e in
+    if Sv.mem x fv then pi
+    else
+      let cel :=
+        {| pi_def := e; pi_fv_ok := erefl fv; pi_m_ok := erefl use |}
+      in
+      Mvar.set pi x cel
+  else pi.
 
 Definition merge (pi1 pi2:pimap) := 
   let ondefs (_:var) (o1 o2 : option pi_cel) := 

@@ -15,7 +15,9 @@ Local Unset Elimination Schemes.
 Variant syscall_t : Type := 
   | RandomBytes of positive
   | Futex
-  | Mmap.
+  | Mmap
+  | Munmap
+  | Mremap.
 
 Scheme Equality for syscall_t.
 
@@ -42,6 +44,8 @@ Definition syscall_num (o: syscall_t) : Z :=
   | RandomBytes _ => 318
   | Futex => 202
   | Mmap => 9
+  | Munmap => 11
+  | Mremap => 25
   end.
 
 Definition syscall_sig_u {pd: PointerData} (o : syscall_t) : syscall_sig_t := 
@@ -49,6 +53,8 @@ Definition syscall_sig_u {pd: PointerData} (o : syscall_t) : syscall_sig_t :=
   | RandomBytes len => {| scs_tin := [:: sarr len; sword Uptr]; scs_tout := [:: sarr len; sword Uptr] |}
   | Futex => {| scs_tin := [:: sword Uptr; sword Uptr; sword U32; sword Uptr; sword Uptr; sword U32]; scs_tout := [:: sword Uptr] |}
   | Mmap => {| scs_tin := [:: sword Uptr; sword Uptr; sword Uptr; sword Uptr; sword Uptr; sword Uptr]; scs_tout := [:: sword Uptr] |}
+  | Munmap => {| scs_tin := [:: sword Uptr; sword Uptr]; scs_tout := [:: sword Uptr] |}
+  | Mremap => {| scs_tin := [:: sword Uptr; sword Uptr; sword Uptr; sword Uptr; sword Uptr]; scs_tout := [:: sword Uptr] |}
   end.
 
 (* After stack alloc ie sprog *)
@@ -57,6 +63,8 @@ Definition syscall_sig_s {pd:PointerData} (o:syscall_t) : syscall_sig_t :=
   | RandomBytes _ => {| scs_tin := [:: sword Uptr; sword Uptr; sword Uptr; sword Uptr]; scs_tout := [::sword Uptr] |}
   | Futex => {| scs_tin := [:: sword Uptr; sword Uptr; sword Uptr; sword U32; sword Uptr; sword Uptr; sword U32]; scs_tout := [:: sword Uptr] |} 
   | Mmap => {| scs_tin := [:: sword Uptr; sword Uptr; sword Uptr; sword Uptr; sword Uptr; sword Uptr; sword Uptr]; scs_tout := [:: sword Uptr] |}
+  | Munmap => {| scs_tin := [:: sword Uptr; sword Uptr; sword Uptr]; scs_tout := [:: sword Uptr] |}
+  | Mremap => {| scs_tin := [:: sword Uptr; sword Uptr; sword Uptr; sword Uptr; sword Uptr; sword Uptr]; scs_tout := [:: sword Uptr] |}
   end.
 
 
@@ -66,6 +74,8 @@ Class syscall_sem {pd : PointerData} (syscall_state : Type) := {
   get_random : syscall_state -> Z -> word Uptr -> syscall_state * (seq u8 * word Uptr);
   futex : syscall_state -> word Uptr -> word Uptr -> word U32 -> word Uptr -> word Uptr -> word U32 -> syscall_state * word Uptr;
   mmap : syscall_state -> word Uptr -> word Uptr -> word Uptr -> word Uptr -> word Uptr -> word Uptr -> syscall_state * word Uptr;
+  munmap : syscall_state -> word Uptr -> word Uptr -> syscall_state * word Uptr;
+  mremap : syscall_state -> word Uptr -> word Uptr -> word Uptr -> word Uptr -> word Uptr -> syscall_state * word Uptr;
 }.
 
 
