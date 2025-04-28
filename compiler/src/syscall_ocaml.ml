@@ -24,8 +24,12 @@ let futex (s : state) _uaddr _futex_op _val _timeout _uaddr2 _val3 =
 let mmap (s : state) _addr _len _prot _flags _filedes _off =
     s, Word0.wrepr Wsize.U64 (CoreConv.cz_of_int 0)
 
+let sched_yield (s : state)  =
+    s, Word0.wrepr Wsize.U64 (CoreConv.cz_of_int 0)
+
 let sc_sem : state Syscall.syscall_sem = {
   get_random = get_random;
   futex =  futex;
   mmap = mmap;
+  sched_yield = sched_yield;
 }

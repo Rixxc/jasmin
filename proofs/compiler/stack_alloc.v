@@ -1211,6 +1211,15 @@ Definition alloc_syscall ii rmap rs o es :=
     | _ =>
       Error (stk_ierror_no_var "mmap: invalid args or result")
     end
+  | SchedYield =>
+    match es with
+    | [::] =>
+      let xsys_num := mk_var_i (vxsys_num pmap) in
+      ok (rmap, [::MkI ii (sap_immediate saparams xsys_num (syscall_num o));
+                   MkI ii (Csyscall rs o [::Plvar xsys_num])])
+    | _ =>
+      Error (stk_ierror_no_var "sched_yield: invalid args or result")
+    end
   end.
 
 Definition is_swap_array o :=

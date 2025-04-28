@@ -79,6 +79,15 @@ Definition exec_mmap_u (scs: syscall_state) (vs: seq value) :=
   let: (st, ret) := mmap scs a l p f fd o in
   ok (st, [:: Vword ret]).
 
+Definition exec_sched_yield_u (scs: syscall_state) (vs: seq value) :=
+  Let: x :=
+  match vs with
+  | [::] => ok(1)
+  | _ => type_error
+  end in
+  let: (st, ret) := sched_yield scs in
+  ok (st, [:: Vword ret]).
+
 Definition exec_syscall_u
   (scs : syscall_state_t)
   (m : mem)
@@ -94,6 +103,9 @@ Definition exec_syscall_u
       ok (sv.1, m, sv.2)
   | Mmap =>
       Let sv := exec_mmap_u scs vs in
+      ok (sv.1, m, sv.2)
+  | SchedYield =>
+      Let sv := exec_sched_yield_u scs vs in
       ok (sv.1, m, sv.2)
   end.
 
@@ -145,6 +157,12 @@ Definition exec_mmap_s_core (scs:syscall_state_t) (m:mem) (sys_num:pointer) (add
   let '(st, ret) := syscall.mmap scs addr len prot flags fildes off in
   ok(st, m, ret).
 
+Definition exec_sched_yield_s_core (scs:syscall_state_t) (m:mem) (sys_num:pointer): (exec (syscall_state * mem * sem_tuple (syscall_sig_s Mmap).(scs_tout))) :=
+  Let _ := assert (Z.eqb (wunsigned sys_num) (syscall_num (Mmap))) ErrType in 
+  let '(st, ret) := syscall.sched_yield scs in
+  ok(st, m, ret).
+
+
 Lemma exec_getrandom_s_core_stable scs m sys_num p len _fl rscs rm rp :
   exec_getrandom_s_core scs m sys_num p len _fl = ok (rscs, rm, rp) →
   stack_stable m rm.
@@ -162,6 +180,7 @@ Definition sem_syscall (o:syscall_t) :
   | RandomBytes _ => exec_getrandom_s_core
   | Futex => exec_futex_s_core
   | Mmap => exec_mmap_s_core
+  | SchedYield => exec_sched_yield_s_core
   end.
 
 Definition exec_syscall_s (scs : syscall_state_t) (m : mem) (o:syscall_t) vs : exec (syscall_state_t * mem * values) :=
